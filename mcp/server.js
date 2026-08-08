@@ -1,0 +1,42 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+import { listOpen, getTopic, setStatus } from "../pool.js";
+
+const server = new McpServer({ name: "topic-pool", version: "0.1.0" });
+
+server.tool("topic_list", "查看话题池里所有未过期、未处理的 Topic",
+  { category: z.string().optional() },
+  async ({ category }) => {
+    const topics = await listOpen(category);
+    if (!topics.length) return { content: [{ type: "text", text: "池子是空的——这轮外面没捞到值得追的，或者都过期了。" }] };
+    const text = topics.map((t) => `# ${t.hook}\n源: ${t.source_title} · ${t.source_url}\n分类: ${t.category} · 过期: ${t.expires_at}\nid: ${t.id}`).join("\n\n");
+    return { content: [{ type: "text", text }] };
+  }
+);
+
+server.tool("topic_get", "按 id 看某条 Topic 详情",
+  { topic_id: z.string() },
+  async ({ topic_id }) => {
+    const t = await getTopic(topic_id);
+    if (!t) return { content: [{ type: "text", text: "没找到这条 Topic（id 可能过期或被清理）。" }] };
+    return { content: [{ type: "text", text: JSON.stringify(t, null, 2) }] };
+  }
+);
+
+server.tool("topic_follow", "把某条 Topic 标记为已带走聊过（consumed）",
+  { topic_id: z.string() },
+  async ({ topic_id }) => {
+    return { content: [{ type: "text", text: await setStatus(topic_id, "consumed") ? "已标记 consumed。" : "未找到。" }] };
+  }
+);
+
+server.tool("topic_ignore", "把某条 Topic 丢掉（dead）",
+  { topic_id: z.string() },
+  async ({ topic_id }) => {
+    return { content: [{ type: "text", text: await setStatus(topic_id, "dead") ? "已丢掉。" : "未找到。" }] };
+  }
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);

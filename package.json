@@ -1,0 +1,19 @@
+{
+  "name": "topic-pool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "话题池链路：Scout 抓取 → Filter 筛选 → Pool(TTL) → 家机主动翻。先筛、会过期、可以不理。",
+  "scripts": {
+    "run": "node run.js",
+    "scout": "node scout.js",
+    "filter": "node filter.js",
+    "pool": "node pool.js",
+    "mcp": "node mcp/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^16.4.0",
+    "zod": "^3.24.0"
+  }
+}

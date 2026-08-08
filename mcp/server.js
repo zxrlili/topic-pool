@@ -45,8 +45,6 @@ function createMcpServer() {
 }
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
-
 const transports = new Map();
 
 async function handleMcpRequest(req, res) {

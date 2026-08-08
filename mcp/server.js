@@ -59,9 +59,9 @@ async function handleMcpRequest(req, res) {
     const id = randomUUID();
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => id,
-      onsessioninitialized: (t) => {
-        transports.set(id, t);
-        t.onclose = () => transports.delete(id);
+      onsessioninitialized: () => {
+        transports.set(id, transport);
+        transport.onclose = () => transports.delete(id);
       }
     });
     const server = createMcpServer();

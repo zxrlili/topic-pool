@@ -77,7 +77,12 @@ export async function setStatus(id, status) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const flag = process.argv[2];
   const arg = process.argv[3];
-  if (flag === "--list") {
+  if (flag === "--import") {
+    let topics = [];
+    try { topics = JSON.parse(await readFile(join(DATA_DIR, "filtered.json"), "utf8")); } catch {}
+    const added = await addTopics(topics);
+    console.log(`pool: 从 filtered.json 入池 ${added} 条 Topic`);
+  } else if (flag === "--list") {
     const topics = await listOpen(arg);
     console.log(JSON.stringify(topics, null, 2));
   } else if (flag === "--expire") {
@@ -88,6 +93,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   } else if (flag === "--ignore" && arg) {
     console.log(await setStatus(arg, "dead") ? "已标记 dead" : "未找到");
   } else {
-    console.log("用法: node pool.js --list [category] | --expire | --consume <id> | --ignore <id>");
+    console.log("用法: node pool.js --import | --list [category] | --expire | --consume <id> | --ignore <id>");
   }
 }

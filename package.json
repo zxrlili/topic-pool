@@ -5,7 +5,6 @@
   "type": "module",
   "description": "话题池链路：Scout 抓取 → Filter 筛选 → Pool(TTL) → 家机主动翻。先筛、会过期、可以不理。",
   "scripts": {
-    "run": "node run.js",
     "scout": "node scout.js",
     "filter": "node filter.js",
     "pool": "node pool.js",
@@ -14,6 +13,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "dotenv": "^16.4.0",
+    "express": "^4.19.0",
     "zod": "^3.24.0"
   }
 }

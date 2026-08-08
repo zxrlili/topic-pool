@@ -1,5 +1,7 @@
+import express from "express";
+import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { listOpen, getTopic, setStatus } from "../pool.js";
 
@@ -38,5 +40,43 @@ server.tool("topic_ignore", "把某条 Topic 丢掉（dead）",
   }
 );
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+const app = express();
+app.use(express.json({ limit: "1mb" }));
+
+const transports = new Map();
+
+app.get("/mcp", async (req, res) => {
+  const sessionId = req.headers["mcp-session-id"];
+  const transport = sessionId ? transports.get(sessionId) : undefined;
+  if (!transport) {
+    res.status(404).json({ error: "session not found" });
+    return;
+  }
+  await transport.handleRequest(req, res);
+});
+
+app.post("/mcp", async (req, res) => {
+  const sessionId = req.headers["mcp-session-id"];
+  let transport = sessionId ? transports.get(sessionId) : undefined;
+  if (!transport) {
+    if (sessionId) {
+      res.status(404).json({ error: "session not found" });
+      return;
+    }
+    const id = randomUUID();
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => id,
+      onsessioninitialized: (t) => {
+        transports.set(id, t);
+        t.onclose = () => transports.delete(id);
+      }
+    });
+    await server.connect(transport);
+  }
+  await transport.handleRequest(req, res);
+});
+
+const PORT = process.env.PORT || 8085;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`topic-pool MCP listening on http://0.0.0.0:${PORT}/mcp`);
+});
